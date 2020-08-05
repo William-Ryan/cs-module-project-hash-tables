@@ -21,9 +21,10 @@ class HashTable:
     """
 
     def __init__(self, capacity):
-        # Your code here
-        self.capacity = capacity if capacity >= MIN_CAPACITY else MIN_CAPACITY
-        self.list = [None] * self.capacity
+        self.capacity = capacity
+        self.size = 0
+        self.keys = []
+        self.storage = [None] * capacity if capacity >= MIN_CAPACITY else [None] * MIN_CAPACITY
 
     def get_num_slots(self):
         """
@@ -33,14 +34,14 @@ class HashTable:
         One of the tests relies on this.
         Implement this.
         """
-        # Your code here
+        return len(self.storage)
 
     def get_load_factor(self):
         """
         Return the load factor for this hash table.
         Implement this.
         """
-        # Your code here
+        return self.size / self.capacity
 
     def fnv1(self, key):
         """
@@ -59,11 +60,10 @@ class HashTable:
         DJB2 hash, 32-bit
         Implement this, and/or FNV-1.
         """
-        # Your code here
-        hash_val = 5381
-        for char in key:
-            hash_val = ((hash_val << 5) + hash_val) + ord(char)
-        return hash_val & 0xFFFFFFFF
+        hash = 5381
+        for c in key:
+            hash = (hash * 33) + ord(c)
+        return hash
 
     def hash_index(self, key):
         """
@@ -79,8 +79,26 @@ class HashTable:
         Hash collisions should be handled with Linked List Chaining.
         Implement this.
         """
-        # Your code here
-        self.list[self.hash_index(key)] = value
+        self.size += 1
+        self.keys.append(key)
+        index = self.hash_index(key)
+        node = self.storage[index]
+        if node is None:
+            self.storage[index] = HashTableEntry(key, value)
+            return
+        prev = node
+        while node is not None and node.key != key:
+            prev = node
+            node = node.next
+        if node != None:
+            node.value = value
+        prev.next = HashTableEntry(key, value)
+        # resize if load factor is too large
+        load = self.get_load_factor()
+        if load > 0.7:
+            self.resize(self.capacity * 2)
+        if load < 0.2:
+            self.resize(self.capacity / 2)
 
     def delete(self, key):
         """
@@ -88,11 +106,23 @@ class HashTable:
         Print a warning if the key is not found.
         Implement this.
         """
-        # Your code here
-        if(self.list[self.hash_index(key)] == None):
-            print("This Key Does Not Exist")
-            return
-        self.list[self.hash_index(key)] = None
+        index = self.hash_index(key)
+        node = self.storage[index]
+        prev = None
+        while node is not None and node.key != key:
+            prev = node
+            node = node.next
+        if node is None:
+            return None
+        else:
+            self.size -= 1
+            self.keys.remove(key)
+            result = node.value
+            if prev is None:
+                self.storage[index] = node.next
+            else:
+                prev.next = prev.next.next
+            return result
 
     def get(self, key):
         """
@@ -100,10 +130,14 @@ class HashTable:
         Returns None if the key is not found.
         Implement this.
         """
-        # Your code here
-        if(self.list[self.hash_index(key)] == None):
+        index = self.hash_index(key)
+        node = self.storage[index]
+        while node is not None and node.key != key:
+            node = node.next
+        if node is None:
             return None
-        return self.list[self.hash_index(key)]
+        else:
+            return node.value
 
     def resize(self, new_capacity):
         """
@@ -111,7 +145,15 @@ class HashTable:
         rehashes all key/value pairs.
         Implement this.
         """
-        # Your code here
+        old_storage = {}
+        for i in range(len(self.keys)):
+            key = self.keys[i]
+            old_storage[key] = self.get(key)
+        self.capacity = new_capacity
+        self.storage = [None] * self.capacity
+        self.size = 0
+        for key, value in old_storage.items():
+            self.put(key, value)
 
 if __name__ == "__main__":
     ht = HashTable(8)

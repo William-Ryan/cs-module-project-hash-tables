@@ -1,5 +1,22 @@
 def word_count(s):
-    # Your code here
+    char_list = ' " : ; , . - + = / \ | [ ] { } ( ) * ^ & '
+    
+    newStr = s.lower().split()
+    # refactored for a list comprehension
+    newArr = [el.strip(char_list) for el in newStr]
+
+    # OLD WAY - for loop
+    # newArr = []
+    # for el in newStr:
+    #     newArr.append(el.strip(char_list))
+    
+    if s == "" or newArr == [""]:
+        return {}
+    else:
+        cache = {}
+        for el in newArr:
+            cache[el] = newArr.count(el)
+        return cache
 
 
 

@@ -12,4 +12,3 @@ def f(x):
     return x * 4 + 6
 
 # Your code here
-

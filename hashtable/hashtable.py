@@ -2,6 +2,7 @@ class HashTableEntry:
     """
     Linked List hash table key/value pair
     """
+
     def __init__(self, key, value):
         self.key = key
         self.value = value
@@ -16,106 +17,143 @@ class HashTable:
     """
     A hash table that with `capacity` buckets
     that accepts string keys
-
     Implement this.
     """
 
     def __init__(self, capacity):
-        # Your code here
-
+        self.capacity = capacity
+        self.size = 0
+        self.keys = []
+        self.storage = [None] * capacity if capacity >= MIN_CAPACITY else [None] * MIN_CAPACITY
 
     def get_num_slots(self):
         """
         Return the length of the list you're using to hold the hash
         table data. (Not the number of items stored in the hash table,
         but the number of slots in the main list.)
-
         One of the tests relies on this.
-
         Implement this.
         """
-        # Your code here
-
+        return len(self.storage)
 
     def get_load_factor(self):
         """
         Return the load factor for this hash table.
-
         Implement this.
         """
-        # Your code here
-
+        return self.size / self.capacity
 
     def fnv1(self, key):
         """
         FNV-1 Hash, 64-bit
-
         Implement this, and/or DJB2.
         """
-
         # Your code here
-
+        hash_val = 14695981039346656037
+        for char in key:
+            hash_val = hash_val * 1099511628211
+            hash_val = hash_val ^ ord(char)
+        return hash_val
 
     def djb2(self, key):
         """
         DJB2 hash, 32-bit
-
         Implement this, and/or FNV-1.
         """
-        # Your code here
-
+        hash = 5381
+        for c in key:
+            hash = (hash * 33) + ord(c)
+        return hash
 
     def hash_index(self, key):
         """
         Take an arbitrary key and return a valid integer index
         between within the storage capacity of the hash table.
         """
-        #return self.fnv1(key) % self.capacity
-        return self.djb2(key) % self.capacity
+        return self.fnv1(key) % self.capacity
+        # return self.djb2(key) % self.capacity
 
     def put(self, key, value):
         """
         Store the value with the given key.
-
         Hash collisions should be handled with Linked List Chaining.
-
         Implement this.
         """
-        # Your code here
-
+        self.size += 1
+        self.keys.append(key)
+        index = self.hash_index(key)
+        node = self.storage[index]
+        if node is None:
+            self.storage[index] = HashTableEntry(key, value)
+            return
+        prev = node
+        while node is not None and node.key != key:
+            prev = node
+            node = node.next
+        if node != None:
+            node.value = value
+        prev.next = HashTableEntry(key, value)
+        # resize if load factor is too large
+        load = self.get_load_factor()
+        if load > 0.7:
+            self.resize(self.capacity * 2)
+        if load < 0.2:
+            self.resize(self.capacity / 2)
 
     def delete(self, key):
         """
         Remove the value stored with the given key.
-
         Print a warning if the key is not found.
-
         Implement this.
         """
-        # Your code here
-
+        index = self.hash_index(key)
+        node = self.storage[index]
+        prev = None
+        while node is not None and node.key != key:
+            prev = node
+            node = node.next
+        if node is None:
+            return None
+        else:
+            self.size -= 1
+            self.keys.remove(key)
+            result = node.value
+            if prev is None:
+                self.storage[index] = node.next
+            else:
+                prev.next = prev.next.next
+            return result
 
     def get(self, key):
         """
         Retrieve the value stored with the given key.
-
         Returns None if the key is not found.
-
         Implement this.
         """
-        # Your code here
-
+        index = self.hash_index(key)
+        node = self.storage[index]
+        while node is not None and node.key != key:
+            node = node.next
+        if node is None:
+            return None
+        else:
+            return node.value
 
     def resize(self, new_capacity):
         """
         Changes the capacity of the hash table and
         rehashes all key/value pairs.
-
         Implement this.
         """
-        # Your code here
-
-
+        old_storage = {}
+        for i in range(len(self.keys)):
+            key = self.keys[i]
+            old_storage[key] = self.get(key)
+        self.capacity = new_capacity
+        self.storage = [None] * self.capacity
+        self.size = 0
+        for key, value in old_storage.items():
+            self.put(key, value)
 
 if __name__ == "__main__":
     ht = HashTable(8)
